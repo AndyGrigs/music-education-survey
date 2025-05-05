@@ -16,37 +16,39 @@ const kidsList = [
 ];
 export default function App() {
     const [kidsData, setKidsData] = useState({});
+
+
     useEffect(() => {
-        // Завантаження початкових даних
-        async function loadData() {
+      // Завантаження початкових даних
+      async function loadData() {
           const { data, error } = await supabase
-            .from('kidsData')
-            .select('*');
+              .from('kidsData')
+              .select('*');
           if (error) {
-            console.error('Error loading data:', error.message);
-            return;
+              console.error('Error loading data:', error.message);
+              return;
           }
           const map = {};
           data.forEach(record => { map[record.id] = record });
           setKidsData(map);
-        }
-        loadData();
-    
-        // Підписка на real-time оновлення
-        const subscription = supabase
-          .from('kidsData')
-          .on('INSERT', payload => {
-            setKidsData(prev => ({ ...prev, [payload.new.id]: payload.new }));
+      }
+      loadData();
+  
+      // Підписка на real-time оновлення
+      const subscription = supabase
+          .channel('public:kidsData')
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'kidsData' }, payload => {
+              setKidsData(prev => ({ ...prev, [payload.new.id]: payload.new }));
           })
-          .on('UPDATE', payload => {
-            setKidsData(prev => ({ ...prev, [payload.new.id]: payload.new }));
+          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'kidsData' }, payload => {
+              setKidsData(prev => ({ ...prev, [payload.new.id]: payload.new }));
           })
           .subscribe();
-    
-        return () => {
-          supabase.removeSubscription(subscription);
-        };
-      }, []);
+  
+      return () => {
+          supabase.removeChannel(subscription);
+      };
+  }, []);
 
 
       const handleChange = (id, field, value) => {
@@ -77,7 +79,7 @@ export default function App() {
                 type="checkbox"
                 checked={!!data.checked}
                 onChange={e => handleChange(kid.id, 'checked', e.target.checked)}
-              />{' '}
+              />
               Виконано
             </label>
             <textarea
