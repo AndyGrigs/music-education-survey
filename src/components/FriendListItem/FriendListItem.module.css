@@ -1,0 +1,27 @@
+.friendItem{
+    border: 3px solid black;
+    border-radius: 6px;
+    padding: 10px;
+}
+
+.avatar{
+    display: block;
+    margin: 0 auto;
+    margin-bottom: 5px;
+}
+
+.name{
+    margin-bottom: 5px;
+}
+
+.name, .status {
+    text-align: center;
+}
+
+.online {
+    color: green;
+  }
+  
+  .offline {
+    color: red;
+  }
