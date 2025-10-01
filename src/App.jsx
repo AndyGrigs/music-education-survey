@@ -1,177 +1,39 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { X, Play, Plus, Code, CheckCircle, Smartphone, RefreshCw, Database } from 'lucide-react';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { createClient } from '@supabase/supabase-js';
-import './App.css';
-
-const supabaseUrl = import.meta.env.VITE_API_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_API_SUPABASE_ANON;
+// Ініціалізація Supabase (замініть на ваші дані)
+const supabaseUrl = import.meta.env.VITE_API_SUPABASE_URL || 'YOUR_SUPABASE_URL';
+const supabaseKey = import.meta.env.VITE_API_SUPABASE_ANON || 'YOUR_SUPABASE_ANON_KEY';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-import React, { useState, useRef, useEffect } from 'react';
-import { X, Play, Plus, Code, CheckCircle, Smartphone } from 'lucide-react';
-
-// Початкові задачі
+// Початкові задачі (для першого запуску)
 const initialTasks = [
   {
-    id: 1,
     title: "Сума двох чисел",
     description: "Напишіть функцію sum(a, b), яка повертає суму двох чисел",
     difficulty: "Легка",
     solution: "",
     completed: false,
-    testCode: "console.log(sum(5, 3)); // 8\nconsole.log(sum(-2, 7)); // 5"
+    test_code: "console.log(sum(5, 3)); // 8\nconsole.log(sum(-2, 7)); // 5"
   },
   {
-    id: 2,
     title: "Перевернути рядок",
     description: "Напишіть функцію reverseString(str), яка перевертає рядок",
     difficulty: "Легка",
     solution: "",
     completed: false,
-    testCode: "console.log(reverseString('hello')); // 'olleh'\nconsole.log(reverseString('JavaScript')); // 'tpircSavaJ'"
+    test_code: "console.log(reverseString('hello')); // 'olleh'\nconsole.log(reverseString('JavaScript')); // 'tpircSavaJ'"
   },
   {
-    id: 3,
     title: "Факторіал числа",
     description: "Напишіть функцію factorial(n), яка обчислює факторіал числа",
     difficulty: "Середня",
     solution: "",
     completed: false,
-    testCode: "console.log(factorial(5)); // 120\nconsole.log(factorial(0)); // 1"
+    test_code: "console.log(factorial(5)); // 120\nconsole.log(factorial(0)); // 1"
   }
 ];
-
-// CodeMirror редактор для мобільних
-const CodeMirrorEditor = ({ value, onChange, onRun }) => {
-  const editorRef = useRef(null);
-  const viewRef = useRef(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-
-    const loadCodeMirror = async () => {
-      try {
-        // Завантажуємо CodeMirror через CDN
-        if (!window.CodeMirror6Loaded) {
-          await new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.0.1/codemirror.min.js';
-            script.type = 'module';
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-          });
-
-          // Завантажуємо додаткові модулі
-          const modules = [
-            'https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.0.1/lang-javascript.min.js',
-            'https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.0.1/theme-one-dark.min.js'
-          ];
-
-          await Promise.all(modules.map(src => 
-            new Promise((resolve, reject) => {
-              const script = document.createElement('script');
-              script.src = src;
-              script.type = 'module';
-              script.onload = resolve;
-              script.onerror = reject;
-              document.head.appendChild(script);
-            })
-          ));
-
-          window.CodeMirror6Loaded = true;
-        }
-
-        if (mounted && editorRef.current && !viewRef.current) {
-          // Імпортуємо необхідні модулі динамічно
-          const { EditorView, basicSetup } = await import('https://esm.sh/@codemirror/basic-setup@0.20.0');
-          const { javascript } = await import('https://esm.sh/@codemirror/lang-javascript@6.0.0');
-          const { oneDark } = await import('https://esm.sh/@codemirror/theme-one-dark@6.0.0');
-          const { EditorState } = await import('https://esm.sh/@codemirror/state@6.0.0');
-
-          viewRef.current = new EditorView({
-            state: EditorState.create({
-              doc: value,
-              extensions: [
-                basicSetup,
-                javascript(),
-                oneDark,
-                EditorView.updateListener.of((update) => {
-                  if (update.docChanged) {
-                    onChange(update.state.doc.toString());
-                  }
-                }),
-                EditorView.theme({
-                  "&": {
-                    height: "100%",
-                    fontSize: "14px"
-                  },
-                  ".cm-scroller": {
-                    overflow: "auto",
-                    fontFamily: "monospace"
-                  }
-                })
-              ]
-            }),
-            parent: editorRef.current
-          });
-
-          setIsLoaded(true);
-        }
-      } catch (error) {
-        console.error('Помилка завантаження CodeMirror:', error);
-      }
-    };
-
-    loadCodeMirror();
-
-    return () => {
-      mounted = false;
-      if (viewRef.current) {
-        viewRef.current.destroy();
-        viewRef.current = null;
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (viewRef.current && value !== viewRef.current.state.doc.toString()) {
-      viewRef.current.dispatch({
-        changes: {
-          from: 0,
-          to: viewRef.current.state.doc.length,
-          insert: value
-        }
-      });
-    }
-  }, [value]);
-
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex justify-between items-center mb-2">
-        <h3 className="text-sm font-semibold text-gray-700">Редактор коду</h3>
-        <button
-          onClick={onRun}
-          className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-        >
-          <Play size={16} />
-          Виконати
-        </button>
-      </div>
-      <div 
-        ref={editorRef} 
-        className="flex-1 border border-gray-300 rounded-lg overflow-hidden bg-gray-900"
-        style={{ minHeight: '200px' }}
-      >
-        {!isLoaded && (
-          <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-            Завантаження редактора...
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
 // Простий fallback редактор
 const SimpleEditor = ({ value, onChange, onRun }) => {
@@ -179,10 +41,7 @@ const SimpleEditor = ({ value, onChange, onRun }) => {
     <div className="flex flex-col h-full">
       <div className="flex justify-between items-center mb-2">
         <h3 className="text-sm font-semibold text-gray-700">Редактор коду</h3>
-        <button
-          onClick={onRun}
-          className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-        >
+        <button onClick={onRun} className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
           <Play size={16} />
           Виконати
         </button>
@@ -193,11 +52,7 @@ const SimpleEditor = ({ value, onChange, onRun }) => {
         className="flex-1 w-full p-3 border border-gray-300 rounded-lg font-mono text-sm bg-gray-900 text-green-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
         placeholder="// Пишіть ваш код тут..."
         spellCheck={false}
-        style={{ 
-          tabSize: 2,
-          WebkitTabSize: 2,
-          MozTabSize: 2
-        }}
+        style={{ tabSize: 2, WebkitTabSize: 2, MozTabSize: 2 }}
       />
     </div>
   );
@@ -214,9 +69,7 @@ const MonacoEditor = ({ value, onChange, onRun }) => {
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js';
     script.async = true;
     script.onload = () => {
-      window.require.config({ 
-        paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } 
-      });
+      window.require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } });
       
       window.require(['vs/editor/editor.main'], () => {
         if (editorRef.current && !monacoRef.current) {
@@ -259,10 +112,7 @@ const MonacoEditor = ({ value, onChange, onRun }) => {
     <div className="flex flex-col h-full">
       <div className="flex justify-between items-center mb-2">
         <h3 className="text-sm font-semibold text-gray-700">Редактор коду</h3>
-        <button
-          onClick={onRun}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-        >
+        <button onClick={onRun} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
           <Play size={16} />
           Виконати
         </button>
@@ -278,22 +128,64 @@ const MonacoEditor = ({ value, onChange, onRun }) => {
 };
 
 function App() {
-  const [tasks, setTasks] = useState(() => {
-    const saved = localStorage.getItem('codingTasks');
-    return saved ? JSON.parse(saved) : initialTasks;
-  });
+  const [tasks, setTasks] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
   const [code, setCode] = useState('');
   const [consoleOutput, setConsoleOutput] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [useCodeMirror, setUseCodeMirror] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
     difficulty: 'Легка',
-    testCode: ''
+    test_code: ''
   });
+
+  // Завантаження задач з Supabase
+  const loadTasks = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setTasks(data);
+      } else {
+        // Якщо задач немає, додаємо початкові
+        await initializeDefaultTasks();
+      }
+    } catch (error) {
+      console.error('Помилка завантаження задач:', error);
+      alert('Помилка підключення до бази даних. Перевірте налаштування Supabase.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Додавання початкових задач
+  const initializeDefaultTasks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert(initialTasks)
+        .select();
+
+      if (error) throw error;
+      if (data) setTasks(data);
+    } catch (error) {
+      console.error('Помилка ініціалізації задач:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadTasks();
+  }, []);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -306,13 +198,9 @@ function App() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('codingTasks', JSON.stringify(tasks));
-  }, [tasks]);
-
   const openTask = (task) => {
     setSelectedTask(task);
-    setCode(task.solution);
+    setCode(task.solution || '');
     setConsoleOutput([]);
   };
 
@@ -344,7 +232,7 @@ function App() {
     };
 
     try {
-      const fullCode = `${code}\n\n${selectedTask.testCode}`;
+      const fullCode = `${code}\n\n${selectedTask.test_code}`;
       eval(fullCode);
     } catch (error) {
       outputs.push({ type: 'error', content: error.toString() });
@@ -357,34 +245,103 @@ function App() {
     setConsoleOutput(outputs);
   };
 
-  const saveTask = () => {
-    const updatedTasks = tasks.map(task =>
-      task.id === selectedTask.id
-        ? { ...task, solution: code, completed: true }
-        : task
-    );
-    setTasks(updatedTasks);
-    alert('Задачу збережено!');
-  };
+  const saveTask = async () => {
+    try {
+      setSyncing(true);
+      const { error } = await supabase
+        .from('tasks')
+        .update({ 
+          solution: code, 
+          completed: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedTask.id);
 
-  const addNewTask = () => {
-    const newId = Math.max(...tasks.map(t => t.id), 0) + 1;
-    const taskToAdd = {
-      id: newId,
-      ...newTask,
-      solution: '',
-      completed: false
-    };
-    setTasks([...tasks, taskToAdd]);
-    setShowAddModal(false);
-    setNewTask({ title: '', description: '', difficulty: 'Легка', testCode: '' });
-  };
+      if (error) throw error;
 
-  const deleteTask = (taskId) => {
-    if (confirm('Ви впевнені, що хочете видалити цю задачу?')) {
-      setTasks(tasks.filter(task => task.id !== taskId));
+      // Оновлюємо локальний стан
+      setTasks(tasks.map(task =>
+        task.id === selectedTask.id
+          ? { ...task, solution: code, completed: true }
+          : task
+      ));
+
+      alert('✅ Задачу збережено в базі даних!');
+    } catch (error) {
+      console.error('Помилка збереження:', error);
+      alert('❌ Помилка збереження задачі');
+    } finally {
+      setSyncing(false);
     }
   };
+
+  const addNewTask = async () => {
+    try {
+      setSyncing(true);
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert([{
+          title: newTask.title,
+          description: newTask.description,
+          difficulty: newTask.difficulty,
+          test_code: newTask.test_code,
+          solution: '',
+          completed: false
+        }])
+        .select();
+
+      if (error) throw error;
+
+      if (data && data[0]) {
+        setTasks([...tasks, data[0]]);
+        setShowAddModal(false);
+        setNewTask({ title: '', description: '', difficulty: 'Легка', test_code: '' });
+      }
+    } catch (error) {
+      console.error('Помилка додавання задачі:', error);
+      alert('❌ Помилка додавання задачі');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const deleteTask = async (taskId) => {
+    if (!confirm('Ви впевнені, що хочете видалити цю задачу з бази даних?')) return;
+
+    try {
+      setSyncing(true);
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      setTasks(tasks.filter(task => task.id !== taskId));
+    } catch (error) {
+      console.error('Помилка видалення:', error);
+      alert('❌ Помилка видалення задачі');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const syncTasks = async () => {
+    setSyncing(true);
+    await loadTasks();
+    setSyncing(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <Database className="animate-pulse mx-auto mb-4 text-indigo-600" size={48} />
+          <p className="text-gray-600">Завантаження задач з бази даних...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-3 md:p-6">
@@ -396,23 +353,36 @@ function App() {
                 <Code className="text-indigo-600" size={isMobile ? 28 : 36} />
                 JS Coding Tasks
               </h1>
-              <p className="text-sm md:text-base text-gray-600 mt-1">Практикуйте JavaScript задачі</p>
+              <p className="text-sm md:text-base text-gray-600 mt-1 flex items-center gap-2">
+                <Database size={14} className="text-green-600" />
+                Синхронізовано з Supabase
+              </p>
               {isMobile && (
                 <div className="flex items-center gap-2 mt-2">
                   <div className="flex items-center gap-2 text-xs text-indigo-600">
                     <Smartphone size={14} />
-                    <span>Мобільна версія (CodeMirror)</span>
+                    <span>Мобільна версія</span>
                   </div>
                 </div>
               )}
             </div>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm md:text-base"
-            >
-              <Plus size={20} />
-              Додати задачу
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={syncTasks}
+                disabled={syncing}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm md:text-base disabled:opacity-50"
+              >
+                <RefreshCw size={20} className={syncing ? 'animate-spin' : ''} />
+                Синхронізувати
+              </button>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm md:text-base"
+              >
+                <Plus size={20} />
+                Додати
+              </button>
+            </div>
           </div>
 
           <div className="grid gap-3 md:gap-4">
@@ -472,25 +442,9 @@ function App() {
             <div className="flex-1 p-3 md:p-6 overflow-hidden flex flex-col gap-3 md:gap-4">
               <div className={isMobile ? 'h-2/5' : 'h-1/2'}>
                 {isMobile ? (
-                  useCodeMirror ? (
-                    <CodeMirrorEditor
-                      value={code}
-                      onChange={setCode}
-                      onRun={runCode}
-                    />
-                  ) : (
-                    <SimpleEditor
-                      value={code}
-                      onChange={setCode}
-                      onRun={runCode}
-                    />
-                  )
+                  <SimpleEditor value={code} onChange={setCode} onRun={runCode} />
                 ) : (
-                  <MonacoEditor
-                    value={code}
-                    onChange={setCode}
-                    onRun={runCode}
-                  />
+                  <MonacoEditor value={code} onChange={setCode} onRun={runCode} />
                 )}
               </div>
 
@@ -526,8 +480,10 @@ function App() {
               </button>
               <button
                 onClick={saveTask}
-                className="px-4 md:px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm md:text-base"
+                disabled={syncing}
+                className="px-4 md:px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm md:text-base disabled:opacity-50 flex items-center gap-2"
               >
+                {syncing && <RefreshCw size={16} className="animate-spin" />}
                 Зберегти
               </button>
             </div>
@@ -559,4 +515,28 @@ function App() {
               </div>
 
               <div>
-       
+                <label className="block text-sm font-medium text-gray-700 mb-2">Опис</label>
+                <textarea
+                  value={newTask.description}
+                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                  className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm md:text-base"
+                  rows="3"
+                  placeholder="Опишіть завдання..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Складність</label>
+                <select
+                  value={newTask.difficulty}
+                  onChange={(e) => setNewTask({ ...newTask, difficulty: e.target.value })}
+                  className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm md:text-base"
+                >
+                  <option>Легка</option>
+                  <option>Середня</option>
+                  <option>Важка</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-
