@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, ChangeEvent } from 'react';
 import { X, Play, Plus, Code, CheckCircle, Smartphone, RefreshCw, Database } from 'lucide-react';
-import { createStore, Store } from 'https://esm.sh/tinybase@4.8.7';
-import { createIndexedDbPersister, Persister } from 'https://esm.sh/tinybase@4.8.7/persisters/persister-indexed-db';
-
+import { createStore, Store } from 'tinybase';
+import { Persister } from 'tinybase/persisters';
+import { createIndexedDbPersister } from 'tinybase/persisters/persister-indexed-db';
 // ==================== ТИПИ ====================
 interface Task {
   id: string;
@@ -85,7 +85,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({ value, onChange, onRun }) =
         className="flex-1 w-full p-3 border border-gray-300 rounded-lg font-mono text-sm bg-gray-900 text-green-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
         placeholder="// Пишіть ваш код тут..."
         spellCheck={false}
-        style={{ tabSize: 2, WebkitTabSize: 2, MozTabSize: 2 }}
+        style={{ tabSize: 2 } as React.CSSProperties}
       />
     </div>
   );
