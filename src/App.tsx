@@ -5,7 +5,8 @@ const App = () => {
   return (
     <div>
         {/* <LoadingScreen/> */}
-        <Console output={[]}/>
+        {/* <Console output={[]}/> */}
+        {/* <SimpleEditor /> */}
     </div>
   )
 }
